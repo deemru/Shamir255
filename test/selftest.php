@@ -56,28 +56,7 @@ class tester
     }
 }
 
-function searchInDump( $t, $target, $data )
-{
-    if( PHP_OS === 'WINNT' )
-    {
-        $t->pretest( 'searchInDump( ' . $target . ' )' );
-        {
-            exec( 'procdump -ma ' . getmypid() . ' -o phpdump' );
-            $dmp = file_get_contents( 'phpdump.dmp' );
-            $offset = 0;
-            $count = 0;
-            for( ;; )
-            {
-                $offset = strpos( $dmp, $data, $offset );
-                if( $offset === false )
-                    break;
-                ++$offset;
-                ++$count;
-            }
-        }
-        $t->test( $target === $count );
-    }
-}
+if( !function_exists( 'random_bytes' ) ){ function random_bytes( $size ){ $rnd = ''; while( $size-- ) $rnd .= chr( mt_rand() ); return $rnd; } }
 
 echo "   TEST: Shamir255\n";
 $t = new tester();

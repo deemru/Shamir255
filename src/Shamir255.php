@@ -138,6 +138,6 @@ class Shamir255
         $secret = hex2bin( $secret );
         if( $secret[0] !== 'S' )
             return false;
-        return substr( $secret, 1 );
+        return $secretlen === 2 ? '' : substr( $secret, 1 );
     }
 }
