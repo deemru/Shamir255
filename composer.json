@@ -1,0 +1,25 @@
+{
+    "name": "deemru/shamir255",
+    "description": "Splits sensitive data by Shamir's secret sharing",
+    "keywords": [ "security", "sensitive", "private", "key", "split", "share", "shamir" ],
+    "homepage": "https://github.com/deemru/Shamir255",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Dmitrii Pichulin",
+            "email": "deem@deem.ru"
+        }
+    ],
+    "require": {
+        "php": ">=5.6"
+    },
+    "autoload": {
+        "psr-4": { "deemru\\": "src/" }
+    },
+    "scripts": {
+        "test": [
+            "@php test/selftest.php"
+        ]
+    }
+}
