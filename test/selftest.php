@@ -61,31 +61,192 @@ if( !function_exists( 'random_bytes' ) ){ function random_bytes( $size ){ $rnd =
 echo "   TEST: Shamir255\n";
 $t = new tester();
 
-$t->pretest( 'share empty' );
+// === Negative tests ===
+
+$t->pretest( 'empty' );
 {
-    $t->test( true === proc( '', 2, 3 ) );
+    $t->test( false === Shamir255::share( '', 2, 3 ) );
 }
 
-$t->pretest( 'share max' );
+$t->pretest( 'needed < 2' );
 {
-    $t->test( true === proc( str_repeat( chr( 255 ), 255 ), 2, 3 ) );
+    $t->test( false === Shamir255::share( 'test', 1, 3 ) );
 }
 
-$t->pretest( 'share over max' );
+$t->pretest( 'needed > total' );
 {
-    $t->test( false === proc( str_repeat( chr( 255 ), 256 ), 2, 3 ) );
+    $t->test( false === Shamir255::share( 'test', 5, 3 ) );
 }
+
+$t->pretest( 'total > 255' );
+{
+    $t->test( false === Shamir255::share( 'test', 2, 256 ) );
+}
+
+$t->pretest( 'recover < 2' );
+{
+    $shares = Shamir255::share( 'test', 2, 3 );
+    $t->test( false === Shamir255::recover( [ 1 => $shares[1] ] ) );
+}
+
+$t->pretest( 'recover x = 0' );
+{
+    $t->test( false === Shamir255::recover( [ 0 => 'test', 1 => 'test' ] ) );
+}
+
+$t->pretest( 'recover x > 255' );
+{
+    $t->test( false === Shamir255::recover( [ 256 => 'test', 1 => 'test' ] ) );
+}
+
+$t->pretest( 'recover different lengths' );
+{
+    $t->test( false === Shamir255::recover( [ 1 => 'test', 2 => 'longer' ] ) );
+}
+
+$t->pretest( 'recover non-string y' );
+{
+    $ok = ( false === Shamir255::recover( [ 1 => 'test', 2 => 12345 ] ) );
+    $ok = $ok && ( false === Shamir255::recover( [ 1 => 'test', 2 => [ 'array' ] ] ) );
+    $t->test( $ok );
+}
+
+// === Positive tests ===
 
 $t->pretest( 'predefined' );
 {
     $sensitive = 'Hello, world!';
     $combine =
     [
-        3 => hex2bin( '90f675126eac8d19c2ac2758e4edf396adac7397a882237bcb65431ab5218baface402d02e6c0f73cc5aa5c21700068a4cbdea78437bde260c86ec992e8a696190ad06db06f26d66768620115786ba32df8b4abbe4d9a1baea83c77167c73089582ac3edc5bb982057d18a5964281786762e44300425353d3617604cc70a2d119c6560728bd9f19f4be9f2c3ba06019431bf582040230ec549953b32b77cf6772c11ddc7cd0ab4bb9014672dfaa965344bc51855953afe05e16176aa41f76beb61b527248b37d88cc4be4871ede80bc2fc230ba83c0595e4105c77261aef3dc3e7952fa13687ddc26c3894626ac7ccaafbdc0faa96fdd39fa80fdf8dcb8d6eda' ),
-        7 => hex2bin( '0a19f38a88a5e88da14d980c30e3649cb24ad0f752888c8d0c92c7036c9cb213efdf84c29840b4e30f57512ef3d581936014716e3efb4a913a50f77b8b53e36c9ec28827e83c3571c5a1589cb54ea69a8e3b65d7681e4e67b0e77e829c28f2c0de842459a4fa7a59192dbf0c4f82fec280c56af2cd57e4a6e317911111728ddb7c98b6cc4c334868e1a29314e2bdf58488c4e9c1fc63eeb51de50743f4aa564102399cf2809bac1abc0a5e96b9a508ff8cc56ad5e5c62b053f146bed27524539a397a2d1ecb241880e73f60e1bfa9e013799e5da4fa702dcde9d7bea6cac91fa4cce345ec3ce09026dd829a1cb599d361258c697f1bc360cf75fd0bf8e6f4176' ),
-        9 => hex2bin( '5e9bcaa661864845afb7d1cb76370e087d5e0d18ec88d6331605cfc3bb6038b5cd9d55b3da5ed26647f5090b7ad72c8145b4f3db6c7fb3d98270aae192bed435347502817b8a7c6d076237e4a63996536c78c559c1c633f31565c5109619946cb923c030a19dd081cfd3ca25a371c7eb761c5ce9ddad883ee71d3a6e78ad5f258fd1101c0622a554f03d2f1f3f8f68b30a2c048102b4ea4ea2941474d780dc57e56c7e9e32da8d4e1a95a1b7312a02b6565a25019daefc33cf159c2c7921062df637877e25700992caa63b2a836b6b26ae7a5e4dbec7cc716e2037a4c193c4fd1f21a865fd10e37925e0c1d2cdb1268c78f682ecda7186f355a13e5c6be4ec9c' ),
+        3 => hex2bin( '3285dc7e245cf938d15ca186d0' ),
+        7 => hex2bin( 'bcc9468ab6817877f565c39cc7' ),
+        9 => hex2bin( 'faae632ae7ef520264b4962108' ),
     ];
     $t->test( $sensitive === Shamir255::recover( $combine ) );
+}
+
+$t->pretest( 'string keys' );
+{
+    $secret = 'String keys test';
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $stringShares = [ '1' => $shares[1], '3' => $shares[3] ];
+    $recovered = Shamir255::recover( $stringShares );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( 'length equals' );
+{
+    $secret = 'test123';
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $ok = true;
+    foreach( $shares as $share )
+        if( strlen( $share ) !== strlen( $secret ) )
+            $ok = false;
+    $t->test( $ok );
+}
+
+$t->pretest( 'single byte secret' );
+{
+    $secret = 'X';
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $recovered = Shamir255::recover( [ 1 => $shares[1], 3 => $shares[3] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( 'secret with 0x00' );
+{
+    $secret = "\x00\x00\xFF\x00\xAB";
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $recovered = Shamir255::recover( [ 2 => $shares[2], 3 => $shares[3] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( 'all 0x00 secret' );
+{
+    $secret = str_repeat( "\x00", rand( 32, 128 ) );
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $recovered = Shamir255::recover( [ 1 => $shares[1], 2 => $shares[2] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( 'all 0xFF secret' );
+{
+    $secret = str_repeat( "\xFF", rand( 32, 128 ) );
+    $shares = Shamir255::share( $secret, 2, 3 );
+    $recovered = Shamir255::recover( [ 1 => $shares[1], 2 => $shares[2] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( '3 of 3' );
+{
+    $secret = 'secret';
+    $shares = Shamir255::share( $secret, 3, 3 );
+    $recovered = Shamir255::recover( $shares );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( '2 of 5' );
+{
+    $secret = 'minimal threshold';
+    $shares = Shamir255::share( $secret, 2, 5 );
+    $recovered = Shamir255::recover( [ 3 => $shares[3], 5 => $shares[5] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( '5 of 7' );
+{
+    $secret = 'higher threshold test';
+    $shares = Shamir255::share( $secret, 5, 7 );
+    $recovered = Shamir255::recover( [
+        1 => $shares[1],
+        3 => $shares[3],
+        4 => $shares[4],
+        6 => $shares[6],
+        7 => $shares[7],
+    ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( '2 but 3 of 5' );
+{
+    $secret = 'secret data';
+    $shares = Shamir255::share( $secret, 3, 5 );
+    $wrong = Shamir255::recover( [ 1 => $shares[1], 2 => $shares[2] ] );
+    $t->test( $wrong !== $secret );
+}
+
+$t->pretest( '2 of 255' );
+{
+    $secret = 'max shares test';
+    $shares = Shamir255::share( $secret, 2, 255 );
+    $recovered = Shamir255::recover( [ 1 => $shares[1], 255 => $shares[255] ] );
+    $t->test( $secret === $recovered && count( $shares ) === 255 );
+}
+
+$t->pretest( 'large secret (4 KiB)' );
+{
+    $secret = random_bytes( 4096 );
+    $shares = Shamir255::share( $secret, 3, 5 );
+    $recovered = Shamir255::recover( [ 1 => $shares[1], 3 => $shares[3], 5 => $shares[5] ] );
+    $t->test( $secret === $recovered );
+}
+
+$t->pretest( 'all 3 of 5' );
+{
+    $secret = 'TEST';
+    $shares = Shamir255::share( $secret, 3, 5 );
+
+    $combos =
+    [
+        [ 1, 2, 3 ], [ 1, 2, 4 ], [ 1, 2, 5 ], [ 1, 3, 4 ], [ 1, 3, 5 ],
+        [ 1, 4, 5 ], [ 2, 3, 4 ], [ 2, 3, 5 ], [ 2, 4, 5 ], [ 3, 4, 5 ],
+    ];
+
+    $ok = true;
+    foreach( $combos as $c )
+        $ok = $ok && ( $secret === Shamir255::recover( [ $c[0] => $shares[$c[0]], $c[1] => $shares[$c[1]], $c[2] => $shares[$c[2]] ] ) );
+
+    $t->test( $ok );
 }
 
 $t->pretest( 'share complex' );
@@ -100,7 +261,24 @@ $t->pretest( 'share complex' );
         $needed = mt_rand( 2, 10 );
         $total = $needed + mt_rand( 0, 10 );
 
-        $result &= proc( $secret, $needed, $total );
+        $shares = Shamir255::share( $secret, $needed, $total );
+        if( $shares === false )
+        {
+            $result = false;
+            break;
+        }
+
+        $numbers = range( 1, $total );
+        shuffle( $numbers );
+        $combines = [];
+        for( $j = 0; $j < $needed; ++$j )
+            $combines[$numbers[$j]] = $shares[$numbers[$j]];
+
+        if( $secret !== Shamir255::recover( $combines ) )
+        {
+            $result = false;
+            break;
+        }
 
         if( microtime( true ) - $tt > 1 )
             break;
@@ -110,28 +288,3 @@ $t->pretest( 'share complex' );
 }
 
 $t->finish();
-
-function proc( $secret, $needed, $total )
-{
-    $shares = Shamir255::share( $secret, $needed, $total );
-    if( $shares === false )
-        return false;
-
-    foreach( $shares as $share )
-        if( strlen( $share ) !== 256 )
-            return false;
-
-    $numbers = [];
-    for( $i = 1; $i <= $total; ++$i )
-        $numbers[] = $i;
-    shuffle( $numbers );
-
-    $combines = [];
-    for( $i = 0; $i < $needed; ++$i )
-    {
-        $number = $numbers[$i];
-        $combines[$number] = $shares[$number];
-    }
-
-    return $secret === Shamir255::recover( $combines );
-}

@@ -2,7 +2,12 @@
 
 [![packagist](https://img.shields.io/packagist/v/deemru/shamir255.svg)](https://packagist.org/packages/deemru/shamir255) [![php-v](https://img.shields.io/packagist/php-v/deemru/shamir255.svg)](https://packagist.org/packages/deemru/shamir255) [![GitHub](https://img.shields.io/github/actions/workflow/status/deemru/Shamir255/php.yml?label=github%20actions)](https://github.com/deemru/Shamir255/actions/workflows/php.yml) [![license](https://img.shields.io/packagist/l/deemru/shamir255.svg)](https://packagist.org/packages/deemru/shamir255)
 
-[Shamir255](https://github.com/deemru/Shamir255) implements Shamir's secret sharing algorithm for sensitive information up to 255 bytes via 2048-bit MODP group.
+[Shamir255](https://github.com/deemru/Shamir255) implements [Shamir's Secret Sharing](https://en.wikipedia.org/wiki/Shamir%27s_secret_sharing) algorithm over [GF(256)](https://en.wikipedia.org/wiki/Finite_field_arithmetic).
+
+- Pure PHP implementation (no extensions required)
+- Share size equals secret size (efficient storage)
+- Supports secrets of any length
+- Up to 255 shares with threshold from 2 to 255
 
 ## Usage
 

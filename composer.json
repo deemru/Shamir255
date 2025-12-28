@@ -1,7 +1,7 @@
 {
     "name": "deemru/shamir255",
     "description": "Splits sensitive data by Shamir's secret sharing",
-    "keywords": [ "security", "sensitive", "private", "key", "split", "share", "shamir" ],
+    "keywords": [ "security", "sensitive", "private", "key", "split", "share", "shamir", "gf256" ],
     "homepage": "https://github.com/deemru/Shamir255",
     "type": "library",
     "license": "MIT",
